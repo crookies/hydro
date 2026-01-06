@@ -1,0 +1,172 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2012                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      snappyHexMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+castellatedMesh true;
+snap            true;
+addLayers       true;
+
+geometry
+{
+    hydro_assembly.stl
+    {
+        type triSurfaceMesh;
+        name hydro;
+    }
+}
+
+castellatedMeshControls
+{
+    maxLocalCells 2000000;
+    maxGlobalCells 4000000;
+    minRefinementCells 10;
+    nCellsBetweenLevels 3; // Important: Ensures we have 3 layers of cells at each size step
+
+    features
+    (
+        { 
+            file "hydro_assembly.eMesh"; 
+            level 6; 
+        }
+    );
+
+    refinementSurfaces
+    {
+        hydro
+        {
+            // The Surface must be at the finest level (Level 8 = 2mm)
+            level (8 10); 
+        }
+    }
+
+    resolveFeatureAngle 30;
+
+    refinementRegions
+    {
+        hydro
+        {
+            mode distance;
+            levels 
+            (
+                // OPTIMIZED "FAST PROGRESSION"
+                // Aiming for ~3-4 cells thick per level
+                
+                // Level 8 (2mm cells): 4 cells buffer = 8mm
+                (0.008  8)      
+                
+                // Level 7 (4mm cells): 4 cells buffer = 16mm
+                // Cumulative Dist: 0.008 + 0.016 = 0.024
+                (0.024  7)      
+
+                // Level 6 (8mm cells): 4 cells buffer = 32mm
+                // Cumulative Dist: 0.024 + 0.032 = 0.056
+                (0.056  6)      
+
+                // Level 5 (16mm cells): 4 cells buffer = 64mm
+                // Cumulative Dist: 0.056 + 0.064 = 0.12
+                (0.12   5)      
+
+                // Level 4 (32mm cells): 3 cells buffer = 96mm
+                // Cumulative Dist: 0.12 + 0.096 = ~0.22
+                (0.22   4)      
+                
+                // Level 3 (64mm cells): 3 cells buffer = ~200mm
+                // Cumulative Dist: 0.22 + 0.20 = 0.42
+                (0.42   3)
+
+                // Level 2 (128mm cells): The wide "Near Field" box
+                // Keep this larger to capture the immediate wake/deformation zone
+                (1.50   2)      
+                
+                // Beyond 1.5m -> Level 0 (500mm background)
+            );
+        }
+    }
+
+    locationInMesh (1.0 1.0 1.0); 
+    allowFreeStandingZoneFaces true;
+}
+
+snapControls
+{
+    nSmoothPatch 3;
+    tolerance 2.0;
+    nSolveIter 100;      
+    nRelaxIter 5;
+    nFeatureSnapIter 15;  
+    explicitFeatureSnap true;      //force to use eMesh
+    implicitFeatureSnap false;
+    multiRegionFeatureSnap false;
+}
+
+addLayersControls
+{
+    relativeSizes true;
+
+    layers
+    {
+        hydro
+        {
+            nSurfaceLayers 3; // EXACTLY 3 Layers as requested
+        }
+    }
+
+    // MATH FOR 3 LAYERS:
+    // Surface Cell (L8) = 2.0mm
+    // finalLayerThickness = 0.5 * 2.0mm = 1.0mm
+    // expansionRatio = 1.2
+    // Layer 3 = 1.0mm
+    // Layer 2 = 0.83mm
+    // Layer 1 = 0.69mm (First cell height)
+    
+    expansionRatio 1.2;
+    finalLayerThickness 0.5; // 50% of the adjacent cell size
+    minThickness 0.1;
+    nGrow 0;
+
+    // Quality controls to ensure layers actually generate
+    featureAngle 130;       
+    slipFeatureAngle 30;    
+    nRelaxIter 5;
+    nSmoothSurfaceNormals 1;
+    nSmoothNormals 3;
+    nSmoothThickness 10;
+    maxFaceThicknessRatio 0.5;
+    maxThicknessToMedialRatio 0.3;
+    minMedialAxisAngle 90;
+    nBufferCellsNoExtrude 0;
+    nLayerIter 50;
+}
+
+meshQualityControls
+{
+    // Standard loose controls
+    maxNonOrtho 75;
+    maxBoundarySkewness 20;
+    maxInternalSkewness 4;
+    maxConcave 80;
+    minVol 1e-13;
+    minTetQuality 1e-30;
+    minArea -1;
+    minTwist 0.02;
+    minDeterminant 0.001;
+    minFaceWeight 0.02;
+    minVolRatio 0.01;
+    minTriangleTwist -1;
+    nSmoothScale 4;
+    errorReduction 0.75;
+}
+
+mergeTolerance 1e-6;

@@ -1,0 +1,76 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
+#------------------------------------------------------------------------------
+
+
+
+# Make 3D mesh in slab of cells.
+(
+    cd snappyHexMesh || exit
+
+    touch open.foam
+
+    runApplication blockMesh || { echo "Error running blockMesh"; exit 1; }
+    
+    runApplication surfaceFeatureExtract || { echo "Error running surfaceFeatureExtract"; exit 1; }
+
+    runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
+
+    runParallel snappyHexMesh -overwrite || { echo "Error running snappyHexMesh"; exit 1; }
+#     runApplication snappyHexMesh -overwrite || { echo "Error running snappyHexMesh"; exit 1; }
+
+   runApplication reconstructParMesh -constant || { echo "Error running reconstructParMesh"; exit 1; }
+)
+
+exit
+
+# Make a 2D mesh by extruding a patch and solve to steady state.
+(
+    cd simpleFoam || exit
+
+    touch open.foam
+
+    # Copy the mesh from snappyHexMesh
+    rm -rf constant/polyMesh
+    cp -r ../snappyHexMesh/constant/polyMesh ./constant
+
+    # Copy decomposeParDict for parallel run
+    cp ../snappyHexMesh/system/decomposeParDict system/
+
+    runApplication createPatch -overwrite || { echo "Error running createPatch"; exit 1; }
+
+    restore0Dir
+
+    runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
+
+    runParallel simpleFoam || { echo "Error running simpleFoam"; exit 1; }
+
+    runApplication reconstructPar || { echo "Error running reconstructPar"; exit 1; }
+)
+
+exit 
+
+# Copy mesh from the steady state case, map the results to a mesh motion case,
+# then solve transient.
+(
+    cd pimpleFoam || exit
+
+    rm -rf constant/polyMesh
+
+    cp -rf \
+        ../simpleFoam/constant/polyMesh \
+        constant
+
+    restore0Dir
+
+    runApplication mapFields ../simpleFoam -sourceTime latestTime -consistent || { echo "Error running mapFields"; exit 1; }
+
+    runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
+
+    runParallel $(getApplication) || { echo "Error running $(getApplication)"; exit 1; }
+
+    runApplication reconstructPar || { echo "Error running reconstructPar"; exit 1; }
+)
+
+#------------------------------------------------------------------------------

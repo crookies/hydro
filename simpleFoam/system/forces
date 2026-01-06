@@ -1,0 +1,70 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2112                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+/*
+forces
+{
+    type            forces;
+    libs            (forces);
+
+    writeControl    timeStep;
+    writeInterval   10;
+    log             false;
+
+    patches         (wing);
+    rho             rhoInf;
+    rhoInf          1;
+    CofR            (0 0 0);
+}
+*/
+
+rudderForces
+{
+    type            forces;
+    libs            (forces);
+    
+    // Where to write the data
+    writeControl    timeStep;
+    writeInterval   10;
+    
+    // Selection of patches (your rudder surface name)
+    patches         ("wing"); 
+
+    // Density for conversion (check your solver, usually needed for incompressible)
+    rho             rhoInf;      
+    rhoInf          1025;        // Density of water (kg/m3)
+
+    // Center of Rotation (A point exactly on your rudder stock axis)
+    CofR            (0 0 0);     //stock top position
+
+    // DEFINE THE RAKE AXIS HERE
+    // This transforms the output forces/moments into this system
+    coordinateSystem
+    {
+        origin  (0 0 0);          // Same as CofR
+        e1      (0.97437 0 0.22495); // Vector pointing Aft/Forward (Rotated 13°)
+        e3      (-0.22495 0 0.97437); // STOCK AXIS VECTOR 13° rake (Normalized)
+    }
+
+/*
+    // RAKED 13° + HEELED 15°
+    coordinateSystem
+    {
+        origin      (0 0 0);
+        
+        // Perpendicular reference (Raked + Heeled)
+        e1          (0.97437 -0.05822 0.21729); 
+        
+        // Stock Axis (Raked + Heeled)
+        e3          (-0.22495 -0.25218 0.94117); 
+    }
+*/
+}
+
+// ************************************************************************* //
+
+

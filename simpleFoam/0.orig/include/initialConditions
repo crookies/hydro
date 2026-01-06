@@ -1,0 +1,9 @@
+// ************************************************************************* //
+// Initial conditions for simpleFoam simulation of flow over NACA 0012 airfoil
+
+flowVelocity         (4.11555 0 0); // m/s corresponding to 8 knots
+pressure             0;         // Pa
+turbulentKE          0.01016;     // m^2 / s^2
+turbulentOmega       1012.82;   // 1 / s
+
+// ************************************************************************* //

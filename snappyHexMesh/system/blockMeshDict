@@ -1,0 +1,46 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2012                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+convertToMeters 1;
+
+// Domain: 20m Long x 10m Wide x 20m Deep
+// Centered on Hydro at (0,0,0)
+
+vertices
+(
+    (-5 -5 -10)  // 0 Bottom-Back-Left
+    (15 -5 -10)  // 1
+    (15  5 -10)  // 2
+    (-5  5 -10)  // 3
+    (-5 -5  10)  // 4 Top-Back-Left
+    (15 -5  10)  // 5
+    (15  5  10)  // 6
+    (-5  5  10)  // 7
+);
+
+blocks
+(
+    hex (0 1 2 3 4 5 6 7)
+    (40 20 40) // 20m / 40 cells = 0.5m per cell (Uniform)
+    simpleGrading (1 1 1) // No grading. Pure uniform cubes.
+);
+
+boundary
+(
+    inlet   { type patch; faces ( (0 4 7 3) ); }
+    outlet  { type patch; faces ( (1 2 6 5) ); }
+    walls   { type patch; faces ( (0 1 5 4) (2 3 7 6) (0 3 2 1) (4 5 6 7) ); }
+);

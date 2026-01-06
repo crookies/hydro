@@ -1,0 +1,12 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/CleanFunctions      # Tutorial clean functions
+#------------------------------------------------------------------------------
+
+( cd snappyHexMesh && cleanCase && rm -rf constant/polyMesh )
+
+( cd simpleFoam && cleanCase0 && rm -rf constant/polyMesh && rm -rf constant/constant)
+
+( cd pimpleFoam && cleanCase0 )
+
+#------------------------------------------------------------------------------
