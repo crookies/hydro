@@ -25,7 +25,7 @@ patches
         // Type of new patch
         patchInfo
         {
-            type empty;
+            type symmetry;
         }
 
         // How to construct: either from 'patches' or 'set'
@@ -41,7 +41,7 @@ patches
         // Type of new patch
         patchInfo
         {
-            type empty;
+            type symmetry;
         }
 
         // How to construct: either from 'patches' or 'set'

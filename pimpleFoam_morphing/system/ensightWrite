@@ -14,11 +14,11 @@ ensightWrite
 
     fields      (U p);
 
-    format      ascii;
+    format      binary;
 
     overwrite   true;
 
-    writeControl onEnd;
+    writeControl writeTime;
 
     consecutive false;
 }

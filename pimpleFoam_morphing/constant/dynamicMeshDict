@@ -1,8 +1,8 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
 | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  v2112                                 |
-|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|  \\    /   O peration     | Version:  v2412                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
 |    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
 FoamFile
@@ -14,80 +14,152 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-dynamicFvMesh   dynamicMotionSolverFvMesh;
+dynamicFvMesh      dynamicMotionSolverFvMesh;
 
-motionSolverLibs (sixDoFRigidBodyMotion);
+motionSolverLibs   ("libsixDoFRigidBodyMotion.so");
 
-motionSolver    sixDoFRigidBodyMotion;
+solver             sixDoFRigidBodyMotion;
 
-// Not necessarily useful here, but can have different motion updates types
-updateControl   timeStep;
-updateInterval  1;
-
-
-patches         (wing);
-innerDistance   0.3;
-outerDistance   1;
-
-mass            22.9;
-centreOfMass    (0.4974612746 -0.01671895744 0.125);
-momentOfInertia (1.958864357 3.920839234 2.057121362);
-orientation
-(
-    0.9953705935 0.09611129781 0
-    -0.09611129781 0.9953705935 0
-    0 0 1
-);
-angularMomentum (0 0 -2);
-g               (0 -9.81 0);
-rho             rhoInf;
-rhoInf          1;
-report          on;
-
-solver
+sixDoFRigidBodyMotionCoeffs
 {
-    type symplectic;
+    // --- 1. MESH MORPHING ---
+    patches         ( hydro ); 
+    innerDistance   2.0;
+    outerDistance   3.0;
+
+    //Define density so solver can convert kinematic pressure to force
+    rho             rhoInf;
+    rhoInf          1025; // Density of water (kg/m^3)
+    
+
+    // --- 2. MASS PROPERTIES (-5 Deg Rotated) ---
+    mass            4.1936;
+    centreOfMass    (0.0695 0.0000 -0.0066); 
+    momentOfInertia (0.3552 0.0100 0.3622);
+
+    solver
+    {
+        type Newmark;
+    }
+
+    // --- 3. SOLVER CONTROLS ---
+    report          on;
+    accelerationRelaxation 0.7; 
+    accelerationDamping    0.95; 
+
+    // --- 4. CONSTRAINTS ---
+    // 1. UNLOCK DEGREES OF FREEDOM
+    // We only lock Sway (Y), Roll (X), and Yaw (Z).
+    // We FREE Surge (X), Heave (Z), and Pitch (Y).
+    constraints
+    {
+        // 1. ROTATION: Allow Pitch Only (Axis Y)
+        // This locks Roll and Yaw, but permits rotation around Y.
+        lockRotation
+        {
+            sixDoFRigidBodyMotionConstraint axis;
+            axis (0 1 0); 
+        }
+
+        // 2. TRANSLATION: Allow X-Z Plane (Surge + Heave)
+        // The "plane" constraint allows motion IN the plane, and locks motion 
+        // perpendicular to it (Normal Y).
+        // This locks Sway, but permits Surge and Heave.
+        lockSway
+        {
+            sixDoFRigidBodyMotionConstraint plane;
+            normal (0 1 0);
+        }
+    }
+    
+
+    // --- 5. RESTRAINTS ---
+    restraints
+    {
+        towingLine
+        {
+            sixDoFRigidBodyMotionRestraint linearSpring;
+            
+            // Attached low on the boat
+            anchor          (-86.74 0 49.98); 
+            refAttachmentPt (-0.1409 0 0.15);
+            
+            // STIFFNESS:
+            // Needs to hold 754N with small stretch. 
+            // F = kx. Let's allow 0.1m stretch. k = 7540.
+            stiffness       8000;
+            damping         500;
+            restLength      0; // 0 means it pulls like a rubber band from the anchor
+        }
+
+        turbineLeft
+        {
+            sixDoFRigidBodyMotionRestraint  linearSpring;
+
+            // 1. ANCHOR: Place this VERY far ahead in the direction of thrust (+X)
+            // Global coordinate: (10000 meters, turbineY, turbineZ)
+            anchor          (10000 0.3315 -0.0093);
+
+            // 2. ATTACHMENT: The location of the turbine on the boat (Local Coords)
+            // This automatically handles the Moment/Torque calculation for you!
+            refAttachmentPt (0.0689 0.3315 -0.0027); // (TurbinePos - CoM)
+
+            // 3. STIFFNESS: F / Distance = 300 / 10000
+            stiffness       0.03;
+
+            // 4. DAMPING: Keep 0 to avoid drag
+            damping         0;
+
+            // 5. REST LENGTH: 0 means it pulls constantly toward the anchor
+            restLength      0;
+        }
+
+        turbineRight
+        {
+            sixDoFRigidBodyMotionRestraint  linearSpring;
+            
+            // Anchor far ahead (+X) aligned with right turbine
+            anchor          (10000 -0.3315 -0.0093);
+
+            // Local attachment point for right turbine
+            refAttachmentPt (0.0689 -0.3315 -0.0027); 
+
+            stiffness       0.03;
+            damping         0;
+            restLength      0;
+        }
+
+            // 1. LOCK ROLL (X-Axis)
+        lockRoll
+        {
+            sixDoFRigidBodyMotionRestraint  linearAxialAngularSpring;
+            axis            (1 0 0); // Acts on X only
+            stiffness       5000;    // High stiffness
+            damping         500;     // Moderate damping
+            referenceAngle  0;
+        }
+
+        // 2. LOCK YAW (Z-Axis)
+        lockYaw
+        {
+            sixDoFRigidBodyMotionRestraint  linearAxialAngularSpring;
+            axis            (0 0 1); // Acts on Z only
+            stiffness       5000;    // High stiffness
+            damping         500;     // Moderate damping
+            referenceAngle  0;
+        }
+
+        // 3. DAMP PITCH (Y-Axis) - THE BACKFLIP STOPPER
+        dampPitch
+        {
+            sixDoFRigidBodyMotionRestraint  linearAxialAngularSpring;
+            axis            (0 1 0); // Acts on Y only
+            
+            // CRITICAL:
+            stiffness       0;       // Zero stiffness = Free to rotate/pitch
+            damping        100;      // Damping ONLY. Stops the startup backflip.
+            
+            referenceAngle  0;
+        }
+    }
 }
-
-constraints
-{
-    yLine
-    {
-        sixDoFRigidBodyMotionConstraint line;
-        centreOfRotation    (0.25 0.007 0.125);
-        direction           (0 1 0);
-    }
-
-    zAxis
-    {
-        sixDoFRigidBodyMotionConstraint axis;
-        axis                (0 0 1);
-    }
-}
-
-restraints
-{
-    verticalSpring
-    {
-        sixDoFRigidBodyMotionRestraint linearSpring;
-
-        anchor          (0.25 0.007 0.125);
-        refAttachmentPt (0.25 0.007 0.125);
-        stiffness       4000;
-        damping         2;
-        restLength      0;
-    }
-
-    axialSpring
-    {
-        sixDoFRigidBodyMotionRestraint linearAxialAngularSpring;
-
-        axis            (0 0 1);
-        stiffness       700;
-        damping         0.5;
-        referenceOrientation $orientation;
-    }
-}
-
-
-// ************************************************************************* //

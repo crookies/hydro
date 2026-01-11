@@ -4,6 +4,45 @@ cd "${0%/*}" || exit                                # Run from this directory
 #------------------------------------------------------------------------------
 
 
+# Copy mesh from the steady state case, map the results to a mesh motion case,
+# then solve transient.
+(
+    cd pimpleFoam_morphing || exit
+
+    touch open.foam
+
+    # Copy the mesh from snappyHexMesh  
+
+    rm -rf constant/polyMesh
+
+    cp -rf \
+        ../simpleFoam/constant/polyMesh \
+        constant
+
+    # Copy decomposeParDict for parallel run
+    cp ../snappyHexMesh/system/decomposeParDict system/
+
+    # Copy initial conditions
+    cp -rf ../simpleFoam/0.orig/include/initialConditions 0.orig/include/
+
+    # restore0Dir
+
+    runApplication mapFields ../simpleFoam -sourceTime latestTime -consistent || { echo "Error running mapFields"; exit 1; }
+
+    cp 0.orig/pointDisplacement 0/pointDisplacement
+
+    # This reads system/changeDictionaryDict and updates 0/U cleanly
+    runApplication changeDictionary
+
+    runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
+
+    runParallel $(getApplication) || { echo "Error running $(getApplication)"; exit 1; }
+
+    runApplication reconstructPar || { echo "Error running reconstructPar"; exit 1; }
+)
+
+#------------------------------------------------------------------------------
+exit
 
 # Make 3D mesh in slab of cells.
 (
@@ -23,7 +62,7 @@ cd "${0%/*}" || exit                                # Run from this directory
    runApplication reconstructParMesh -constant || { echo "Error running reconstructParMesh"; exit 1; }
 )
 
-exit
+
 
 # Make a 2D mesh by extruding a patch and solve to steady state.
 (
@@ -49,12 +88,15 @@ exit
     runApplication reconstructPar || { echo "Error running reconstructPar"; exit 1; }
 )
 
-exit 
 
 # Copy mesh from the steady state case, map the results to a mesh motion case,
 # then solve transient.
 (
-    cd pimpleFoam || exit
+    cd pimpleFoam_morphing || exit
+
+    touch open.foam
+
+    # Copy the mesh from snappyHexMesh  
 
     rm -rf constant/polyMesh
 
@@ -62,9 +104,18 @@ exit
         ../simpleFoam/constant/polyMesh \
         constant
 
+    # Copy decomposeParDict for parallel run
+    cp ../snappyHexMesh/system/decomposeParDict system/
+
+    # Copy initial conditions
+    cp -rf ../simpleFoam/0.orig/include/initialConditions 0.orig/include/
+
     restore0Dir
 
     runApplication mapFields ../simpleFoam -sourceTime latestTime -consistent || { echo "Error running mapFields"; exit 1; }
+
+    # This reads system/changeDictionaryDict and updates 0/U cleanly
+    runApplication changeDictionary
 
     runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
 

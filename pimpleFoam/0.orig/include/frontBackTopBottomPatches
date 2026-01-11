@@ -18,12 +18,12 @@ bottom
 
 front
 {
-    type empty;
+    type symmetry;
 }
 
 back
 {
-    type empty;
+    type symmetry;
 }
 
 // ************************************************************************* //

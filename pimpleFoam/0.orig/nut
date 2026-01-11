@@ -33,7 +33,7 @@ boundaryField
     }
     "(front|back)"
     {
-	type		symmetryPlane;
+	type		symmetry;
     }
 }
 

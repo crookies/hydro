@@ -9,4 +9,6 @@ cd "${0%/*}" || exit                                # Run from this directory
 
 ( cd pimpleFoam && cleanCase0 )
 
+( cd pimpleFoam_morphing && cleanCase0 )
+
 #------------------------------------------------------------------------------

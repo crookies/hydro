@@ -1,9 +1,6 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
 | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  v2306                                 |
-|   \\  /    A nd           | Website:  www.openfoam.com                      |
-|    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
@@ -20,28 +17,19 @@ internalField   uniform (0 0 0);
 
 boundaryField
 {
-    wing
+    // The Moving patch
+    hydro
     {
-        type            calculated;
-        value           uniform (0 0 0);
+        // 'calculated' allows the solver to control this patch via dynamicMeshDict
+        type            calculated; 
     }
 
-    front
-    {
-        type            empty;
-    }
-
-    back
-    {
-        type            empty;
-    }
-
-    ".*"
+    // All other patches (Inlet, Outlet, Walls, Symmetry)
+    // They must NOT move, so we lock them to 0.
+    "(.*)" 
     {
         type            fixedValue;
         value           uniform (0 0 0);
     }
 }
-
-
 // ************************************************************************* //

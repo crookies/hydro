@@ -33,7 +33,7 @@ boundaryField
         value           $internalField;
     }
 
-    wing
+    hydro
     {
         type            zeroGradient;
     }

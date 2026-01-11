@@ -14,7 +14,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-turbulentOmega	400;
+#include "include/initialConditions"
 
 dimensions      [0 0 -1 0 0 0 0];
 
@@ -35,7 +35,7 @@ boundaryField
         value           $internalField;
     }
 
-    wing
+    hydro
     {
         type            omegaWallFunction;
         value           $internalField;

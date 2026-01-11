@@ -16,7 +16,7 @@ FoamFile
 
 // Define variables to be used
 // * * * * * * * * * * * * * * * 
-flowVelocity         (5.144 0 0);
+#include "include/initialConditions"
 // * * * * * * * * * * * * * * * 
 
 dimensions      [0 1 -1 0 0 0 0]; // m/s
@@ -38,10 +38,9 @@ boundaryField
         value           $internalField;
     }
 
-    wing
+    hydro
     {
-        type            movingWallVelocity;
-        value           uniform (0 0 0);
+        type            noSlip; // fixedValue (0 0 0);
     }
 
     #include "include/frontBackTopBottomPatches"

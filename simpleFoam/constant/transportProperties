@@ -18,7 +18,7 @@ transportModel  Newtonian;
 
 nu              1.0034e-06;	// m2/s
 
-// Re = c U / nu c = 1 m, U = 10 m/s --> Re = 10 10^6
+// Re = c U / nu c = Chord, U = Uflow m/s 
 // nu = mu / rho
 
 // ************************************************************************* //

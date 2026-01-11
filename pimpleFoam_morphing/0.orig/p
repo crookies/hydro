@@ -14,7 +14,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-pressure	0;
+#include "include/initialConditions"
 
 dimensions      [0 2 -2 0 0 0 0];
 
@@ -33,7 +33,7 @@ boundaryField
         value           $internalField;
     }
 
-    wing
+    hydro
     {
         type            zeroGradient;
     }
