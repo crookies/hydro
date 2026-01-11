@@ -20,11 +20,11 @@ cp ../snappyHexMesh/system/decomposeParDict system/
 # Copy initial conditions
 cp -rf ../simpleFoam/0.orig/include/initialConditions 0.orig/include/
 
-restore0Dir
+# restore0Dir
 
-#runApplication mapFields ../simpleFoam -sourceTime latestTime -consistent || { echo "Error running mapFields"; exit 1; }
+runApplication mapFields ../simpleFoam -sourceTime latestTime -consistent || { echo "Error running mapFields"; exit 1; }
 
-#cp 0.orig/pointDisplacement 0/pointDisplacement
+cp 0.orig/pointDisplacement 0/pointDisplacement
 
 # This reads system/changeDictionaryDict and updates 0/U cleanly
 runApplication changeDictionary
@@ -34,3 +34,5 @@ runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
 runParallel $(getApplication) || { echo "Error running $(getApplication)"; exit 1; }
 
 runApplication reconstructPar || { echo "Error running reconstructPar"; exit 1; }
+
+

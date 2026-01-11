@@ -89,7 +89,7 @@ sixDoFRigidBodyMotionCoeffs
             // F = kx. Let's allow 0.1m stretch. k = 7540.
             stiffness       8000;
             damping         500;
-            restLength      0; // 0 means it pulls like a rubber band from the anchor
+            restLength      99.906;
         }
 
         turbineLeft
