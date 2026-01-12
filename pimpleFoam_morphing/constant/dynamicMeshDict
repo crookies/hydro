@@ -34,7 +34,7 @@ sixDoFRigidBodyMotionCoeffs
 
     // --- 2. MASS PROPERTIES (-5 Deg Rotated) ---
     mass            4.1936;
-    centreOfMass    (0.0695 0.0000 -0.0066); 
+    centreOfMass    (0.0694 0 -0.0067);        // with a -3.3° pitch
     momentOfInertia (0.3552 0.0100 0.3622);
 
     solver
@@ -82,7 +82,7 @@ sixDoFRigidBodyMotionCoeffs
             sixDoFRigidBodyMotionRestraint linearSpring;
 
             // 1. High Attachment Point (The Lever)
-            refAttachmentPt (-0.168 0 0.085);
+            refAttachmentPt (0.0564 0 0.0644);    //Attachement point with a -3.3° pitch
 
             // 2. Anchor placed 1000m away at 30 degrees
             // (-0.14 - 866 = -866.14)
