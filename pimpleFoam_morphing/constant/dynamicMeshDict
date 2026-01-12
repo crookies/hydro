@@ -25,7 +25,7 @@ sixDoFRigidBodyMotionCoeffs
     // --- 1. MESH MORPHING ---
     patches         ( hydro ); 
     innerDistance   2.0;
-    outerDistance   3.0;
+    outerDistance   30.0;
 
     //Define density so solver can convert kinematic pressure to force
     rho             rhoInf;
@@ -76,20 +76,27 @@ sixDoFRigidBodyMotionCoeffs
     // --- 5. RESTRAINTS ---
     restraints
     {
+
         towingLine
         {
             sixDoFRigidBodyMotionRestraint linearSpring;
-            
-            // Attached low on the boat
-            anchor          (-86.74 0 49.98); 
-            refAttachmentPt (-0.1409 0 0.15);
-            
-            // STIFFNESS:
-            // Needs to hold 754N with small stretch. 
-            // F = kx. Let's allow 0.1m stretch. k = 7540.
-            stiffness       8000;
-            damping         500;
-            restLength      99.906;
+
+            // 1. High Attachment Point (The Lever)
+            refAttachmentPt (-0.168 0 0.085);
+
+            // 2. Anchor placed 1000m away at 30 degrees
+            // (-0.14 - 866 = -866.14)
+            // (0.15 + 500 = 500.15)
+            anchor          (-866.1409 0 500.15);
+
+            // 3. Stiffness tuned to give exactly 754 N at 1000m
+            stiffness       0.754; 
+        
+            // 4. Zero rest length ensures F = k * Distance
+            restLength      0;
+        
+            // 5. Minimal damping to prevent spring vibration
+            damping         1; 
         }
 
         turbineLeft
@@ -129,6 +136,13 @@ sixDoFRigidBodyMotionCoeffs
             restLength      0;
         }
 
+        // Global damper acting at CoM (No Pitch Moment)
+        surgeKiller
+        {
+           sixDoFRigidBodyMotionRestraint linearDamper;
+           coeff           3000;   // Adjust this braking power as needed (start high to stop the surge)
+        }
+
             // 1. LOCK ROLL (X-Axis)
         lockRoll
         {
@@ -157,7 +171,7 @@ sixDoFRigidBodyMotionCoeffs
             
             // CRITICAL:
             stiffness       0;       // Zero stiffness = Free to rotate/pitch
-            damping        100;      // Damping ONLY. Stops the startup backflip.
+            damping        50;      // Damping ONLY. Stops the startup backflip.
             
             referenceAngle  0;
         }
