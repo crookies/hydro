@@ -9,15 +9,42 @@ FoamFile
 {
     version     2.0;
     format      ascii;
-    class       dictionary;
-    object      decomposeParDict;
+    class       volVectorField;
+    object      U;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-numberOfSubdomains 20;
+// Define variables to be used
+// * * * * * * * * * * * * * * * 
+#include "include/initialConditions"
+// * * * * * * * * * * * * * * * 
 
-method          scotch;
+dimensions      [0 1 -1 0 0 0 0]; // m/s
 
+internalField   uniform $flowVelocity;
+
+boundaryField
+{
+    inlet
+    {
+        type  fixedValue;
+        value $internalField;
+    }
+
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform (0 0 0);
+        value           $internalField;
+    }
+
+    wing
+    {
+        type            noSlip; // fixedValue (0 0 0);
+    }
+
+    #include "include/frontBackTopBottomPatches"
+}
 
 
 // ************************************************************************* //

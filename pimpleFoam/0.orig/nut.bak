@@ -9,15 +9,33 @@ FoamFile
 {
     version     2.0;
     format      ascii;
-    class       dictionary;
-    object      decomposeParDict;
+    class       volScalarField;
+    object      nut;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-numberOfSubdomains 20;
+dimensions      [0 2 -1 0 0 0 0];
 
-method          scotch;
+internalField   uniform 0;
 
+boundaryField
+{
+    wing
+    {
+        type            nutkWallFunction;
+        value           uniform 0;
+    }
+
+    "(top|bottom|inlet|outlet)"
+    {
+        type            calculated;
+        value           uniform 0;
+    }
+    "(front|back)"
+    {
+	type		symmetry;
+    }
+}
 
 
 // ************************************************************************* //

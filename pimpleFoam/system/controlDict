@@ -32,7 +32,7 @@ writeInterval   1e-1;
 
 purgeWrite      0;
 
-writeFormat     ascii;
+writeFormat     binary;
 
 writePrecision  10;
 
@@ -49,4 +49,34 @@ adjustTimeStep  yes;
 maxCo           0.9;
 
 
+functions
+{
+    // Name of the function object (can be anything, e.g. hydroForces)
+    hydroForces
+    {
+        type            forces;
+        libs            (forces);
+        
+        // Write data every time step
+        writeControl    timeStep;
+        writeInterval   1;
+
+        // 1. DENSITY FIX (Critical for pimpleFoam)
+        rho             rhoInf;
+        rhoInf          1025;   // Sea water density
+
+        // 2. PATCHES: List the names of your boat patches here
+        // e.g. ( hull foils rudder )
+        patches         ( hydro ); 
+
+        // 3. CENTER OF ROTATION
+        // Set this to your Pivot point to see moments relative to the tow hitch
+        // Pivot: (-0.1409 0 0.0379)
+        //CofR            (-0.1409 0 -0.02);
+        
+        // 4. ORIENTATION
+        // Usually (0 0 0) for center of rotation, but some versions need explicit origin
+       // origin          (-0.1409 0 0.0379); 
+    }
+}
 // ************************************************************************* //

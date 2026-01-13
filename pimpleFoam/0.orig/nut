@@ -20,7 +20,7 @@ internalField   uniform 0;
 
 boundaryField
 {
-    wing
+    hydro
     {
         type            nutkWallFunction;
         value           uniform 0;

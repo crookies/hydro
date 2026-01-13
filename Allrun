@@ -3,87 +3,195 @@ cd "${0%/*}" || exit                                # Run from this directory
 . ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
 #------------------------------------------------------------------------------
 
+show_help() {
+    echo "Usage: $(basename "$0") [-h] [-m] [-p] [-s] [-q]"
+    echo ""
+    echo "Options:"
+    echo "  -h    Show this help message and exit."
+    echo "  -m    Execute only the pimpleFoam_morphing case (setup and solver)."
+    echo "  -p    Run the pimpleFoam case instead of the default pimpleFoam_morphing."
+    echo "  -s    Execute only the meshing (snappyHexMesh) and simpleFoam parts."
+    echo "  -q    Execute only the pimpleFoam case (setup and solver)."
+    exit 0
+}
 
-# Make 3D mesh in slab of cells.
-(
-    cd snappyHexMesh || exit
+run_pimple=false
+run_morphing_only=false
+run_setup_only=false
+run_pimple_only=false
 
-    touch open.foam
+while getopts "hmpsq" opt; do
+  case $opt in
+    h)
+      show_help
+      ;;
+    m)
+      run_morphing_only=true
+      ;;
+    p)
+      run_pimple=true
+      ;;
+    s)
+      run_setup_only=true
+      ;;
+    q)
+      run_pimple_only=true
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+  esac
+done
 
-    runApplication blockMesh || { echo "Error running blockMesh"; exit 1; }
-    
-    runApplication surfaceFeatureExtract || { echo "Error running surfaceFeatureExtract"; exit 1; }
+run_snappyHexMesh_block() {
+    (
+        cd snappyHexMesh || exit
 
-    runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
+        touch open.foam
 
-    runParallel snappyHexMesh -overwrite || { echo "Error running snappyHexMesh"; exit 1; }
-#     runApplication snappyHexMesh -overwrite || { echo "Error running snappyHexMesh"; exit 1; }
+        runApplication blockMesh || { echo "Error running blockMesh"; exit 1; }
+        
+        runApplication surfaceFeatureExtract || { echo "Error running surfaceFeatureExtract"; exit 1; }
 
-   runApplication reconstructParMesh -constant || { echo "Error running reconstructParMesh"; exit 1; }
-)
+        runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
+
+        runParallel snappyHexMesh -overwrite || { echo "Error running snappyHexMesh"; exit 1; }
+    #     runApplication snappyHexMesh -overwrite || { echo "Error running snappyHexMesh"; exit 1; }
+
+       runApplication reconstructParMesh -constant || { echo "Error running reconstructParMesh"; exit 1; }
+    )
+}
+
+run_simpleFoam_block() {
+    (
+        cd simpleFoam || exit
+
+        touch open.foam
+
+        # Copy the mesh from snappyHexMesh
+        rm -rf constant/polyMesh
+        cp -r ../snappyHexMesh/constant/polyMesh ./constant
+
+        # Copy decomposeParDict for parallel run
+        cp ../snappyHexMesh/system/decomposeParDict system/
+
+        runApplication createPatch -overwrite || { echo "Error running createPatch"; exit 1; }
+
+        restore0Dir
+
+        runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
+
+        runParallel simpleFoam || { echo "Error running simpleFoam"; exit 1; }
+
+        runApplication reconstructPar || { echo "Error running reconstructPar"; exit 1; }
+    )
+}
+
+run_pimpleFoam_block() {
+    (
+        cd pimpleFoam || exit
+
+        touch open.foam
+
+        rm -rf constant/polyMesh
+
+        cp -rf \
+            ../simpleFoam/constant/polyMesh \
+            constant
+
+        # Copy decomposeParDict for parallel run
+        cp ../snappyHexMesh/system/decomposeParDict system/
+
+        # Copy initial conditions
+        cp -rf ../simpleFoam/0.orig/include/initialConditions 0.orig/include/
+
+        # restore0Dir
+
+        runApplication mapFields ../simpleFoam -sourceTime latestTime -consistent || { echo "Error running mapFields"; exit 1; }
+
+        # This reads system/changeDictionaryDict and updates 0/U cleanly
+        runApplication changeDictionary
+
+        runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
+
+        runParallel $(getApplication) || { echo "Error running $(getApplication)"; exit 1; }
+
+        runApplication reconstructPar || { echo "Error running reconstructPar"; exit 1; }
+    )
+}
+
+run_pimpleFoam_morphing_block() {
+    (
+        cd pimpleFoam_morphing || exit
+
+        touch open.foam
+
+        # Copy the mesh from snappyHexMesh  
+
+        rm -rf constant/polyMesh
+
+        cp -rf \
+            ../simpleFoam/constant/polyMesh \
+            constant
+
+        # Copy decomposeParDict for parallel run
+        cp ../snappyHexMesh/system/decomposeParDict system/
+
+        # Copy initial conditions
+        cp -rf ../simpleFoam/0.orig/include/initialConditions 0.orig/include/
+
+        # restore0Dir
+
+        runApplication mapFields ../simpleFoam -sourceTime latestTime -consistent || { echo "Error running mapFields"; exit 1; }
+
+        cp 0.orig/pointDisplacement 0/pointDisplacement
+
+        # This reads system/changeDictionaryDict and updates 0/U cleanly
+        runApplication changeDictionary
+
+        runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
+
+        runParallel $(getApplication) || { echo "Error running $(getApplication)"; exit 1; }
+
+        runApplication reconstructPar || { echo "Error running reconstructPar"; exit 1; }
+    )
+}
 
 
+# Main script logic
+if [ "$run_pimple_only" = true ]; then
+    echo "Running pimpleFoam case only..."
+    run_pimpleFoam_block
+    exit 0
+fi
 
-# Make a 2D mesh by extruding a patch and solve to steady state.
-(
-    cd simpleFoam || exit
+if [ "$run_morphing_only" = true ]; then
+    echo "Running pimpleFoam_morphing case only..."
+    run_pimpleFoam_morphing_block
+    exit 0
+fi
 
-    touch open.foam
+if [ "$run_setup_only" = true ]; then
+    echo "Running meshing..."
+    run_snappyHexMesh_block
+    echo "Running simpleFoam steady-state..."
+    run_simpleFoam_block
+    exit 0
+fi
 
-    # Copy the mesh from snappyHexMesh
-    rm -rf constant/polyMesh
-    cp -r ../snappyHexMesh/constant/polyMesh ./constant
+echo "Running meshing..."
+run_snappyHexMesh_block
 
-    # Copy decomposeParDict for parallel run
-    cp ../snappyHexMesh/system/decomposeParDict system/
+echo "Running simpleFoam steady-state..."
+run_simpleFoam_block
 
-    runApplication createPatch -overwrite || { echo "Error running createPatch"; exit 1; }
-
-    restore0Dir
-
-    runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
-
-    runParallel simpleFoam || { echo "Error running simpleFoam"; exit 1; }
-
-    runApplication reconstructPar || { echo "Error running reconstructPar"; exit 1; }
-)
-
-
-# Copy mesh from the steady state case, map the results to a mesh motion case,
-# then solve transient.
-(
-    cd pimpleFoam_morphing || exit
-
-    touch open.foam
-
-    # Copy the mesh from snappyHexMesh  
-
-    rm -rf constant/polyMesh
-
-    cp -rf \
-        ../simpleFoam/constant/polyMesh \
-        constant
-
-    # Copy decomposeParDict for parallel run
-    cp ../snappyHexMesh/system/decomposeParDict system/
-
-    # Copy initial conditions
-    cp -rf ../simpleFoam/0.orig/include/initialConditions 0.orig/include/
-
-    # restore0Dir
-
-    runApplication mapFields ../simpleFoam -sourceTime latestTime -consistent || { echo "Error running mapFields"; exit 1; }
-
-    cp 0.orig/pointDisplacement 0/pointDisplacement
-
-    # This reads system/changeDictionaryDict and updates 0/U cleanly
-    runApplication changeDictionary
-
-    runApplication decomposePar || { echo "Error running decomposePar"; exit 1; }
-
-    runParallel $(getApplication) || { echo "Error running $(getApplication)"; exit 1; }
-
-    runApplication reconstructPar || { echo "Error running reconstructPar"; exit 1; }
-)
+if [ "$run_pimple" = true ]; then
+    echo "Running pimpleFoam case..."
+    run_pimpleFoam_block
+else
+    echo "Running pimpleFoam_morphing case..."
+    run_pimpleFoam_morphing_block
+fi
 
 # End of script
