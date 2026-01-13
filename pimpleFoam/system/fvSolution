@@ -27,14 +27,14 @@ solvers
     p
     {
         $pcorr;
-        tolerance        1e-7;
+        tolerance        1e-6;
         relTol           0.01;
     }
 
     pFinal
     {
         $p;
-        tolerance        1e-7;
+        tolerance        1e-6;
         relTol           0;
     }
 
