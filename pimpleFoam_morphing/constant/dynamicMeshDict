@@ -82,7 +82,8 @@ sixDoFRigidBodyMotionCoeffs
             sixDoFRigidBodyMotionRestraint linearSpring;
 
             // 1. High Attachment Point (The Lever)
-            refAttachmentPt (0.0564 0 0.0644);    //Attachement point with a -3.3° pitch
+//            refAttachmentPt (0.0564 0 0.0644);    //Attachement point with a -3.3° pitch
+	   refAttachmentPt (-0.116 0 0.100);
 
             // 2. Anchor placed 1000m away at 30 degrees
             // (-0.14 - 866 = -866.14)
@@ -140,7 +141,7 @@ sixDoFRigidBodyMotionCoeffs
         surgeKiller
         {
            sixDoFRigidBodyMotionRestraint linearDamper;
-           coeff           3000;   // Adjust this braking power as needed (start high to stop the surge)
+           coeff           8000;   // Adjust this braking power as needed (start high to stop the surge)
         }
 
             // 1. LOCK ROLL (X-Axis)
@@ -171,7 +172,7 @@ sixDoFRigidBodyMotionCoeffs
             
             // CRITICAL:
             stiffness       0;       // Zero stiffness = Free to rotate/pitch
-            damping        50;      // Damping ONLY. Stops the startup backflip.
+            damping        150;      // Damping ONLY. Stops the startup backflip.
             
             referenceAngle  0;
         }

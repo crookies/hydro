@@ -48,7 +48,7 @@ runTimeModifiable true;
 
 
 adjustTimeStep  yes;    // Allow OpenFOAM to shrink the time step
-maxCo           0.5;    // Maximum Courant Number (Keep this near 1.0 for stability)
+maxCo           0.8;    // Maximum Courant Number (Keep this near 1.0 for stability)
 maxDeltaT       0.001;  // Cap the maximum time step size
 
 
