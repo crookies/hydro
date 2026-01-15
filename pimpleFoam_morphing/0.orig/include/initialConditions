@@ -1,7 +1,8 @@
 // ************************************************************************* //
 // Initial conditions for simpleFoam simulation of flow over NACA 0012 airfoil
 
-Uflow                4.11555; // 8 knots
+UFlow           3.19;      // 6.2 knots
+//Uflow                4.11555; // 8 knots
 //Uflow                5.14444; // 10 knots
 Chord                0.12;
 

@@ -32,10 +32,10 @@ sixDoFRigidBodyMotionCoeffs
     rhoInf          1025; // Density of water (kg/m^3)
     
 
-    // --- 2. MASS PROPERTIES (-5 Deg Rotated) ---
-    mass            4.1936;
-    centreOfMass    (0.0694 0 -0.0067);        // with a -3.3° pitch
-    momentOfInertia (0.3552 0.0100 0.3622);
+    // --- 2. MASS PROPERTIES  ---
+    mass            4.1795;
+    centreOfMass    (0.0694 0 -0.0066);        // with a -3.4° pitch
+    momentOfInertia (0.3550 0.0098 0.3619);
 
     solver
     {
@@ -82,16 +82,16 @@ sixDoFRigidBodyMotionCoeffs
             sixDoFRigidBodyMotionRestraint linearSpring;
 
             // 1. High Attachment Point (The Lever)
-//            refAttachmentPt (0.0564 0 0.0644);    //Attachement point with a -3.3° pitch
-	   refAttachmentPt (-0.116 0 0.100);
+            //Attachement point -0.085,  0.072 with a -3.4° pitch
+	        refAttachmentPt (-0.0891 0 0.0668);
 
-            // 2. Anchor placed 1000m away at 30 degrees
-            // (-0.14 - 866 = -866.14)
-            // (0.15 + 500 = 500.15)
-            anchor          (-866.1409 0 500.15);
+            // 2. Anchor placed 1000m away at 30.2 degrees
+            // (-0.116 - 864.27 = -864.39)
+            // (0.100 + 503.02 = 503.12)
+            anchor          (-864.3907 0 503.1199);
 
-            // 3. Stiffness tuned to give exactly 754 N at 1000m
-            stiffness       0.754; 
+            // 3. Stiffness tuned to give exactly 449.7 N at 1000m
+            stiffness       0.4497; 
         
             // 4. Zero rest length ensures F = k * Distance
             restLength      0;
@@ -141,7 +141,7 @@ sixDoFRigidBodyMotionCoeffs
         surgeKiller
         {
            sixDoFRigidBodyMotionRestraint linearDamper;
-           coeff           8000;   // Adjust this braking power as needed (start high to stop the surge)
+           coeff           500;   // Adjust this braking power as needed (start high to stop the surge)
         }
 
             // 1. LOCK ROLL (X-Axis)
